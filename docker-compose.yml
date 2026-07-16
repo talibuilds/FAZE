@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  # ── PostgreSQL ─────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: faze-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: faze
+      POSTGRES_PASSWORD: lockr_dev_pw
+      POSTGRES_DB: faze_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U faze -d faze_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── S3 Mock (for Day 2+ media uploads) ────
+  s3mock:
+    image: adobe/s3mock:latest
+    container_name: faze-s3mock
+    restart: unless-stopped
+    environment:
+      - initialBuckets=faze-media
+    ports:
+      - "9090:9090"
+      - "9191:9191"
+
+  # ── FAZE Backend (use `npm run dev` locally instead) ──
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: faze-backend
+    restart: unless-stopped
+    profiles:
+      - production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://faze:lockr_dev_pw@postgres:5432/faze_db?schema=public
+      JWT_SECRET: docker-dev-secret-change-in-production
+      JWT_EXPIRES_IN: 7d
+      PORT: 4000
+      NODE_ENV: production
+      S3_ENDPOINT: http://s3mock:9090
+      S3_ACCESS_KEY: faze-key
+      S3_SECRET_KEY: faze-secret
+      S3_BUCKET: faze-media
+    ports:
+      - "4000:4000"
+
+volumes:
+  postgres_data:
