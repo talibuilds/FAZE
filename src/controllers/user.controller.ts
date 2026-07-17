@@ -58,8 +58,8 @@ class UserController {
     const processMedia = async (mediaList: any[], isPurchased: boolean) => {
       return Promise.all(
         mediaList.map(async (m) => {
-          const originalUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(m.originalKey)}&v=2`;
-          const previewUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(m.previewKey)}&v=2`;
+          const originalUrl = `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.originalKey)}&v=2`;
+          const previewUrl = `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.previewKey)}&v=2`;
           
           const totalCollected = m.purchases ? m.purchases.reduce((acc: number, p: any) => acc + p.amountPaid, 0) : 0;
           const buyers = m.purchases ? m.purchases.map((p: any) => p.user.name || p.user.email.split('@')[0]) : [];

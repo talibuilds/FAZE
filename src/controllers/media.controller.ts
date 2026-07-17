@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT || "http://192.168.1.3:9090",
+  endpoint: process.env.S3_ENDPOINT || "http://localhost:9090",
   region: "us-east-1",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY || "faze-key",
