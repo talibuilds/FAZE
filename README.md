@@ -194,7 +194,7 @@ erDiagram
 
 ## 👨‍💻 Author
 
-Built with ❤️ by **Talib** (and Antigravity).
+Built with ❤️ by **Talib Khan**.
 
 ---
 
