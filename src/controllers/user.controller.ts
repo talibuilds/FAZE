@@ -37,6 +37,13 @@ class UserController {
     const published = await prisma.media.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" },
+      include: {
+        purchases: {
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
     });
 
     // Fetch purchased media
@@ -51,8 +58,12 @@ class UserController {
     const processMedia = async (mediaList: any[], isPurchased: boolean) => {
       return Promise.all(
         mediaList.map(async (m) => {
-          const originalUrl = await s3Service.getPresignedUrl(m.originalKey, 3600);
-          const previewUrl = await s3Service.getPresignedUrl(m.previewKey, 3600);
+          const originalUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(m.originalKey)}&v=2`;
+          const previewUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(m.previewKey)}&v=2`;
+          
+          const totalCollected = m.purchases ? m.purchases.reduce((acc: number, p: any) => acc + p.amountPaid, 0) : 0;
+          const buyers = m.purchases ? m.purchases.map((p: any) => p.user.name || p.user.email.split('@')[0]) : [];
+
           return {
             id: m.id,
             title: m.title,
@@ -61,6 +72,8 @@ class UserController {
             previewUrl,
             isUnlocked: true,
             type: isPurchased ? "purchased" : "published",
+            totalCollected,
+            buyers,
           };
         })
       );

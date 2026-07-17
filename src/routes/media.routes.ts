@@ -8,8 +8,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticate);
 
-router.get("/feed", getFeed);
 router.get("/proxy", proxyImage);
+router.get("/feed", getFeed);
 router.post("/upload", upload.single("image"), uploadMedia);
 router.post("/:id/unlock", purchaseMedia);
 router.get("/:id/original", getOriginalUrl);

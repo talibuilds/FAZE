@@ -41,6 +41,29 @@ class WalletService {
       transactions,
     };
   }
+  async addBalance(userId: string, amount: number): Promise<WalletInfo> {
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
+      const newBalance = user.walletBalance + amount;
+      
+      await tx.user.update({
+        where: { id: userId },
+        data: { walletBalance: newBalance },
+      });
+
+      await tx.transaction.create({
+        data: {
+          userId,
+          type: "credit",
+          amount,
+          balanceAfter: newBalance,
+          reason: "deposit:fake_payment",
+        },
+      });
+    });
+
+    return this.getWallet(userId);
+  }
 }
 
 export const walletService = new WalletService();

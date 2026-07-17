@@ -8,5 +8,6 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/", walletController.getWallet);
+router.post("/add", walletController.addBalance);
 
 export default router;

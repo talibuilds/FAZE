@@ -25,17 +25,16 @@ class MediaService {
     const originalKey = `media/${mediaId}/original-${file.originalname}`;
     const previewKey = `media/${mediaId}/preview-${file.originalname}`;
 
-    // Upload original to S3
-    await s3Service.uploadFile(originalKey, file.buffer, file.mimetype);
-
-    // Generate blurred preview using sharp
-    const previewBuffer = await sharp(file.buffer)
-      .resize(800) // max width
-      .blur(20) // heavy blur
+    // Process preview and upload both concurrently for speed
+    const previewBufferPromise = sharp(file.buffer)
+      .resize(400) // smaller max width for degradation
+      .jpeg({ quality: 60 }) // lower quality instead of blur
       .toBuffer();
 
-    // Upload preview to S3
-    await s3Service.uploadFile(previewKey, previewBuffer, file.mimetype);
+    await Promise.all([
+      s3Service.uploadFile(originalKey, file.buffer, file.mimetype),
+      previewBufferPromise.then(previewBuffer => s3Service.uploadFile(previewKey, previewBuffer, file.mimetype))
+    ]);
 
     // Save to database
     const media = await prisma.media.create({
@@ -82,7 +81,8 @@ class MediaService {
           price: media.price,
           ownerEmail: media.owner.email,
           isUnlocked,
-          previewUrl: `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(media.previewKey)}`,
+          previewUrl: `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
+          originalUrl: isUnlocked ? `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2` : undefined,
         };
       })
     );
@@ -197,8 +197,23 @@ class MediaService {
       throw AppError.forbidden("You must unlock this media to view it", "NOT_UNLOCKED");
     }
 
-    const originalUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(media.originalKey)}`;
+    const originalUrl = `http://192.168.1.3:4000/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`;
     return { originalUrl };
+  }
+  async checkAccess(userId: string, mediaId: string): Promise<boolean> {
+    const media = await prisma.media.findUnique({
+      where: { id: mediaId },
+      include: {
+        purchases: { where: { userId } },
+      },
+    });
+
+    if (!media) return false;
+
+    const isOwner = media.ownerId === userId;
+    const hasPurchased = media.purchases.length > 0;
+
+    return isOwner || hasPurchased;
   }
 }
 

@@ -97,6 +97,16 @@ curl http://localhost:4000/api/wallet \
 - Parameterized queries via Prisma (no raw SQL)
 - Audit logging for auth events
 
+### Security Considerations (Media Protection)
+
+To protect paid content and ensure robust security, the following architectural decisions have been implemented:
+
+- **Access control**: All media access requests are routed through the `/api/media/proxy` endpoint, which sits entirely behind JWT authentication middleware. Unauthenticated requests are strictly rejected.
+- **Media storage strategy**: Original high-resolution files and compressed previews are stored in a private S3 bucket. Public access is disabled at the bucket level.
+- **Preventing direct access to original files**: S3 Presigned URLs are never exposed directly to the client. Instead, the backend Node.js server proxies the image stream, acting as a secure gateway.
+- **Ownership validation**: Before the proxy streams any file prefixed with `original-`, it performs a database lookup via Prisma to verify that the requesting user either owns the media or has a valid `Purchase` record.
+- **Secure delivery of unlocked content**: The React Native frontend is configured to securely pass the user's Bearer token in the headers of all `<Image>` components, ensuring secure delivery of the proxied streams.
+
 ## Environment Variables
 
 | Variable       | Description                  | Default                      |
