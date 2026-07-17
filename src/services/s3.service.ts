@@ -4,7 +4,7 @@ import { config } from "../config";
 
 const s3Client = new S3Client({
   endpoint: process.env.S3_ENDPOINT || "http://192.168.1.3:9090",
-  region: "us-east-1", // s3mock doesn't care, but SDK requires it
+  region: process.env.S3_REGION || "us-east-1",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY || "faze-key",
     secretAccessKey: process.env.S3_SECRET_KEY || "faze-secret",
