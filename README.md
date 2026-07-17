@@ -104,6 +104,100 @@ npm run dev
 
 ---
 
+## 📐 System Architecture
+
+The following diagram illustrates the high-level architecture of FAZE, showing how the mobile client, API backend, database, and S3 storage interact, especially focusing on the secure proxy stream:
+
+```mermaid
+graph TD
+    Client[📱 React Native App]
+    Backend[⚙️ Node.js / Express API]
+    DB[(🐘 PostgreSQL)]
+    S3[(🪣 MinIO / S3)]
+
+    Client <-->|1. HTTP / REST| Backend
+    Backend <-->|2. Prisma ORM| DB
+    Backend <-->|3. AWS SDK| S3
+
+    subgraph Secure Media Flow
+        Client -->|A. Request Proxy Image + JWT| Backend
+        Backend -->|B. Validate Ownership| DB
+        Backend -->|C. Fetch Stream| S3
+        S3 -->|D. Return Buffer| Backend
+        Backend -->|E. Pipe Stream to App| Client
+    end
+```
+
+---
+
+## 🗄️ Database ER Diagram
+
+The PostgreSQL database is managed via Prisma. Here is the Entity-Relationship (ER) model representing the core schema:
+
+```mermaid
+erDiagram
+    User ||--o{ Media : "owns"
+    User ||--o{ Purchase : "makes"
+    User ||--o{ Transaction : "has"
+    Media ||--o{ Purchase : "unlocked by"
+
+    User {
+        String id PK
+        String email UK
+        String name
+        String passwordHash
+        Int walletBalance
+        DateTime createdAt
+    }
+    
+    Media {
+        String id PK
+        String ownerId FK
+        String title
+        String description
+        String tags
+        String previewKey
+        String originalKey
+        Int price
+        DateTime createdAt
+    }
+    
+    Purchase {
+        String id PK
+        String userId FK
+        String mediaId FK
+        Int amountPaid
+        DateTime createdAt
+    }
+    
+    Transaction {
+        String id PK
+        String userId FK
+        String type
+        Int amount
+        Int balanceAfter
+        String reason
+        DateTime createdAt
+    }
+    
+    AuditLog {
+        String id PK
+        String userId
+        String action
+        String mediaId
+        Json metadata
+        DateTime createdAt
+    }
+```
+
+---
+
+## 👨‍💻 Author
+
+Built with ❤️ by **Talib** (and Antigravity).
+
+---
+
 ## 📄 License
 
 ISC
