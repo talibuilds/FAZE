@@ -1,4 +1,6 @@
 <div align="center">
+  <img src="./assets/logo.png" width="150" alt="FAZE Logo" />
+  <br/>
   
   # 🔒 F A Z E
   **Unlock what's worth it.**
