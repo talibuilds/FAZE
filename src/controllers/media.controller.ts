@@ -51,7 +51,9 @@ export const uploadMedia = asyncHandler(async (req: Request, res: Response) => {
 
 export const getFeed = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const feed = await mediaService.getFeed(userId);
+  const tag = req.query.tag as string | undefined;
+  
+  const feed = await mediaService.getFeed(userId, tag);
 
   res.status(200).json({
     data: feed,

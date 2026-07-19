@@ -55,8 +55,9 @@ class MediaService {
   /**
    * Retrieves all media. Returns preview URLs and a flag if the user has unlocked it.
    */
-  async getFeed(userId: string) {
+  async getFeed(userId: string, tag?: string) {
     const mediaList = await prisma.media.findMany({
+      where: tag ? { tags: { contains: tag, mode: 'insensitive' } } : undefined,
       orderBy: { createdAt: "desc" },
       include: {
         owner: { select: { email: true } },
