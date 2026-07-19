@@ -27,7 +27,7 @@ class MediaService {
 
     const originalKey = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
     const previewBuffer = await previewBufferPromise;
-    const previewKey = `data:${file.mimetype};base64,${previewBuffer.toString('base64')}`;
+    const previewKey = `data:image/jpeg;base64,${previewBuffer.toString('base64')}`;
 
     // Save to database
     const media = await prisma.media.create({
