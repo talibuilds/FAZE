@@ -55,6 +55,7 @@ FAZE is a robust mobile application that allows creators to monetize their premi
 ### ✨ Key Features
 - **🪙 Internal Digital Economy**: A fully functioning wallet system allowing users to accumulate and spend digital coins.
 - **🔒 Secure Media Proxy**: Real-time ownership validation. Original files are streamed securely as buffers directly to the mobile client through an authenticated JWT layer.
+- **🔐 Native Google OAuth**: Seamless, one-tap native Google Sign-In integration for Android, securely authenticating users without web redirects.
 - **🎨 Modern Dark UI**: A sleek, premium glassmorphic dark-mode interface built with React Native.
 - **☁️ Serverless & Cloud Ready**: Fully containerized backend running on Render, powered by Supabase's high-performance Postgres connection pooler and S3-compatible cloud storage.
 
@@ -85,6 +86,8 @@ Security is the primary focus of FAZE to guarantee that creators' premium conten
 *   **🚫 Direct Access Prevention**: S3 Presigned URLs are handled purely server-side. The Node.js server securely proxies the image buffer stream directly to the authenticated client app.
 *   **🛂 Real-Time Ownership Validation**: Before the backend proxy streams any file prefixed with `original-`, it performs a live database transaction via Prisma to verify that the requesting user either natively owns the media or holds a cryptographically valid `Purchase` record.
 *   **📱 Secure Mobile Delivery**: The React Native frontend is securely configured to pass the active session's Bearer token inside the HTTP headers of all native `<Image>` components, ensuring the proxy stream is flawlessly authenticated.
+*   **🛡️ Cryptographic Asset Uniqueness (SHA-256)**: Every uploaded image is aggressively hashed in-memory using the SHA-256 algorithm before hitting the database. The hash acts as a unique fingerprint, mathematically guaranteeing that no user can steal and re-upload someone else's premium content.
+*   **💧 Irreversible Server-Side Watermarking**: Previews are not just scaled down; they are aggressively composited with a heavy, opaque watermark at the pixel level using the highly optimized `sharp` C++ image processing library. The original pixels are physically destroyed in the preview, making AI watermark removal practically impossible.
 *   **🛑 Rate Limiting & Auditing**: Endpoints are rate-limited to prevent brute-forcing (10 req/15 min per IP). All critical transactions and authentication events are written to an Audit Log.
 
 ---
@@ -205,6 +208,7 @@ erDiagram
         String tags
         String previewKey
         String originalKey
+        String hash UK
         Int price
         DateTime createdAt
     }
