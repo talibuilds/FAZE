@@ -19,11 +19,13 @@ export default function SettingsScreen() {
   const isFocused = useIsFocused();
   const [name, setName] = useState(storeUser?.name || 'User');
   const [email, setEmail] = useState(storeUser?.email || '');
+  const [username, setUsername] = useState('');
 
   const fetchProfile = useCallback(async () => {
     try {
       const res = await apiClient.get('/user/stats');
       setName(res.data.data.name || storeUser?.name || 'User');
+      setUsername(res.data.data.username || '');
     } catch (err) {
       // Fall back to store data if API fails
       if (storeUser?.name) setName(storeUser.name);
@@ -56,13 +58,13 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <Header />
       <ScrollView>
-        <Text style={styles.headerTitle}>Settings</Text>
 
-      <View style={styles.profileSection}>
+      <View style={[styles.profileSection, { marginTop: 20 }]}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{getInitials(name)}</Text>
         </View>
         <Text style={styles.profileName}>{name}</Text>
+        {username ? <Text style={styles.profileUsername}>@{username}</Text> : null}
         {email ? <Text style={styles.profileEmail}>{email}</Text> : null}
       </View>
 
@@ -117,6 +119,12 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  profileUsername: {
+    color: '#D4AF37',
+    fontSize: 14,
+    marginTop: 4,
+    fontWeight: '600',
   },
   profileEmail: {
     color: '#888',

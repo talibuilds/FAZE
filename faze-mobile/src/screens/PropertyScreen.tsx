@@ -93,9 +93,8 @@ export default function PropertyScreen() {
   return (
     <View style={styles.container}>
       <Header />
-      <Text style={styles.headerTitle}>My Property</Text>
       
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { marginTop: 20 }]}>
         <TouchableOpacity 
           style={[styles.tab, tab === 'purchased' && styles.activeTab]}
           onPress={() => setTab('purchased')}

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import prisma from "../db/prisma";
 import { s3Service } from "../services/s3.service";
+import { AppError } from "../utils/AppError";
 
 class UserController {
   getStats = asyncHandler(async (req: Request, res: Response) => {
@@ -17,7 +18,7 @@ class UserController {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, walletBalance: true },
+      select: { name: true, walletBalance: true, username: true, email: true },
     });
 
     res.status(200).json({
@@ -26,6 +27,8 @@ class UserController {
         totalPurchased,
         walletBalance: user?.walletBalance || 0,
         name: user?.name || "User",
+        username: user?.username || "",
+        email: user?.email || "",
       },
     });
   });
@@ -90,27 +93,6 @@ class UserController {
     });
   });
 
-  updateProfile = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId;
-    const { name } = req.body;
-
-    if (!name || typeof name !== 'string') {
-      res.status(400).json({ error: { message: "Name is required and must be a string" } });
-      return;
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { name },
-      select: { id: true, name: true, email: true, walletBalance: true }
-    });
-
-    res.status(200).json({
-      message: "Profile updated successfully",
-      data: updatedUser,
-    });
-  });
-
   getTransactionHistory = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
 
@@ -163,6 +145,55 @@ class UserController {
 
     res.status(200).json({
       data: formattedTransactions,
+    });
+  });
+
+  checkUsername = asyncHandler(async (req: Request, res: Response) => {
+    const { username } = req.body;
+    if (!username) {
+      throw AppError.badRequest("Username is required");
+    }
+
+    const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+    const existingUser = await prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    res.status(200).json({
+      data: {
+        available: !existingUser,
+        username: cleanUsername,
+      },
+    });
+  });
+
+  updateProfile = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const { name, username } = req.body;
+
+    const dataToUpdate: any = {};
+    if (name) dataToUpdate.name = name.trim();
+    if (username) {
+      const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const existingUser = await prisma.user.findUnique({
+        where: { username: cleanUsername },
+      });
+      if (existingUser && existingUser.id !== userId) {
+        throw AppError.conflict("Username is already taken", "USERNAME_TAKEN");
+      }
+      dataToUpdate.username = cleanUsername;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: dataToUpdate,
+      select: { id: true, name: true, username: true, email: true },
+    });
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      data: updatedUser,
     });
   });
 }

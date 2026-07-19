@@ -108,6 +108,7 @@ export default function FeedScreen() {
       
       <View style={styles.cardInfo}>
         <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.username}>@{item.ownerUsername || item.ownerEmail.split('@')[0]}</Text>
         <Text style={[styles.subtitle, item.isUnlocked && styles.subtitleSuccess]}>
           {item.isUnlocked ? 'Unlocked' : `${item.price} coins to unlock`}
         </Text>
@@ -244,7 +245,8 @@ const styles = StyleSheet.create({
   badgeSuccess: { position: 'absolute', top: 10, right: 10, backgroundColor: '#2E7D32', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
 
   cardInfo: { padding: 12 },
-  title: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  title: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  username: { color: '#D4AF37', fontSize: 12, marginBottom: 4, fontWeight: '600' },
   subtitle: { color: '#888', fontSize: 12 },
   subtitleSuccess: { color: '#4CAF50' },
 

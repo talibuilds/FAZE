@@ -10,6 +10,11 @@ export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [originalUsername, setOriginalUsername] = useState('');
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -17,6 +22,9 @@ export default function EditProfileScreen() {
     apiClient.get('/user/stats')
       .then(res => {
         setName(res.data.data.name !== 'User' ? res.data.data.name : '');
+        setEmail(res.data.data.email || '');
+        setUsername(res.data.data.username || '');
+        setOriginalUsername(res.data.data.username || '');
       })
       .catch(err => {
         console.error(err);
@@ -25,15 +33,47 @@ export default function EditProfileScreen() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!username || username === originalUsername) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setCheckingUsername(true);
+      try {
+        const res = await apiClient.post('/user/check-username', { username });
+        setUsernameAvailable(res.data.data.available);
+      } catch (e) {
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [username, originalUsername]);
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Name cannot be empty');
       return;
     }
+    if (!username.trim()) {
+      Alert.alert('Validation Error', 'Username cannot be empty');
+      return;
+    }
+    if (usernameAvailable === false) {
+      Alert.alert('Validation Error', 'Username is not available');
+      return;
+    }
 
     setSaving(true);
     try {
-      await apiClient.put('/user/profile', { name: name.trim() });
+      await apiClient.put('/user/profile', { 
+        name: name.trim(),
+        username: username.trim()
+      });
       Alert.alert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -73,8 +113,40 @@ export default function EditProfileScreen() {
               onChangeText={setName}
             />
           </View>
+          <Text style={styles.label}>Email (Read-only)</Text>
+          <View style={[styles.inputContainer, { opacity: 0.5 }]}>
+            <Ionicons name="mail-outline" size={20} color="#888" style={styles.icon} />
+            <TextInput 
+              style={styles.input} 
+              value={email}
+              editable={false}
+            />
+          </View>
+
+          <Text style={styles.label}>Username</Text>
+          <View style={[styles.inputContainer, usernameAvailable === false ? styles.inputError : null]}>
+            <Ionicons name="at-outline" size={20} color="#888" style={styles.icon} />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Username" 
+              placeholderTextColor="#555"
+              value={username}
+              onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {checkingUsername ? (
+              <ActivityIndicator size="small" color="#888" />
+            ) : username !== originalUsername && usernameAvailable !== null ? (
+              <Ionicons 
+                name={usernameAvailable ? "checkmark-circle" : "close-circle"} 
+                size={20} 
+                color={usernameAvailable ? "#4CAF50" : "#F44336"} 
+              />
+            ) : null}
+          </View>
           
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving || usernameAvailable === false}>
             {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
           </TouchableOpacity>
         </View>
@@ -111,6 +183,7 @@ const styles = StyleSheet.create({
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A0A0A', borderWidth: 1, borderColor: '#222', borderRadius: 12, paddingHorizontal: 15, marginBottom: 30 },
   icon: { marginRight: 10 },
   input: { flex: 1, color: '#FFF', fontSize: 16, paddingVertical: 15 },
+  inputError: { borderColor: '#F44336' },
   saveBtn: { backgroundColor: '#D4AF37', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   saveBtnText: { color: '#000', fontSize: 16, fontWeight: 'bold' }
 });

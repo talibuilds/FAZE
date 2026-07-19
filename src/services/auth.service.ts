@@ -23,6 +23,7 @@ export interface AuthResponse {
   user: {
     id: string;
     name: string;
+    username?: string | null;
     email: string;
     walletBalance: number;
     createdAt: Date;
@@ -45,6 +46,21 @@ class AuthService {
       throw AppError.conflict("An account with this email already exists", "EMAIL_TAKEN");
     }
 
+    let baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    let finalUsername = baseUsername;
+    let counter = 1;
+    let isAvailable = false;
+
+    while (!isAvailable) {
+      const existingUser = await prisma.user.findUnique({ where: { username: finalUsername } });
+      if (!existingUser) {
+        isAvailable = true;
+      } else {
+        finalUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
 
     // Create user and initial transaction
@@ -53,6 +69,7 @@ class AuthService {
         data: {
           email,
           name,
+          username: finalUsername,
           passwordHash,
           walletBalance: 500, // 500 starting credits
         },
@@ -88,6 +105,7 @@ class AuthService {
       user: {
         id: user.id,
         name: user.name,
+        username: user.username,
         email: user.email,
         walletBalance: user.walletBalance,
         createdAt: user.createdAt,
@@ -144,6 +162,7 @@ class AuthService {
       user: {
         id: user.id,
         name: user.name,
+        username: user.username,
         email: user.email,
         walletBalance: user.walletBalance,
         createdAt: user.createdAt,
@@ -164,11 +183,27 @@ class AuthService {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
+      let baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let finalUsername = baseUsername;
+      let counter = 1;
+      let isAvailable = false;
+
+      while (!isAvailable) {
+        const existingUser = await prisma.user.findUnique({ where: { username: finalUsername } });
+        if (!existingUser) {
+          isAvailable = true;
+        } else {
+          finalUsername = `${baseUsername}${counter}`;
+          counter++;
+        }
+      }
+
       // Create new user for Google Auth
       user = await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
             email,
+            username: finalUsername,
             name: name || "User",
             googleId,
             walletBalance: 500,
@@ -212,6 +247,7 @@ class AuthService {
       user: {
         id: user.id,
         name: user.name,
+        username: user.username,
         email: user.email,
         walletBalance: user.walletBalance,
         createdAt: user.createdAt,

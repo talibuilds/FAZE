@@ -63,7 +63,7 @@ class MediaService {
       where: tag ? { tags: { contains: tag, mode: 'insensitive' } } : undefined,
       orderBy: { createdAt: "desc" },
       include: {
-        owner: { select: { email: true } },
+        owner: { select: { email: true, username: true } },
         purchases: {
           where: { userId },
         },
@@ -84,6 +84,7 @@ class MediaService {
           tags: media.tags,
           price: media.price,
           ownerEmail: media.owner.email,
+          ownerUsername: media.owner.username,
           isUnlocked,
           previewUrl: media.previewKey.startsWith('data:') ? media.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
           originalUrl: isUnlocked ? (media.originalKey.startsWith('data:') ? media.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`) : undefined,

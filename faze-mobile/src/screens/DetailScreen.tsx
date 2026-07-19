@@ -203,7 +203,7 @@ export default function DetailScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.ownerText}>Created by: {mediaData.ownerEmail ? mediaData.ownerEmail.split('@')[0] : 'Unknown'}</Text>
+        <Text style={styles.ownerText}>Created by: @{mediaData.ownerUsername || (mediaData.ownerEmail ? mediaData.ownerEmail.split('@')[0] : 'Unknown')}</Text>
         
         {isUnlocked ? (
           <>
@@ -254,9 +254,9 @@ const styles = StyleSheet.create({
 
   detailsSection: { padding: 25, flex: 1 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  title: { color: '#FFF', fontSize: 24, fontWeight: 'bold' },
+  title: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
+  ownerText: { color: '#D4AF37', fontSize: 14, marginBottom: 15, fontWeight: '600' },
   deleteButton: { padding: 5 },
-  ownerText: { color: '#888', fontSize: 14, marginBottom: 15 },
   
   unlockedBadge: { alignSelf: 'flex-start', borderWidth: 1, borderColor: '#4CAF50', borderRadius: 15, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 20 },
   unlockedBadgeText: { color: '#4CAF50', fontSize: 12, fontWeight: 'bold' },
