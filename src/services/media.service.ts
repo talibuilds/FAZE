@@ -75,8 +75,8 @@ class MediaService {
           price: media.price,
           ownerEmail: media.owner.email,
           isUnlocked,
-          previewUrl: media.previewKey.startsWith('data:image') ? media.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
-          originalUrl: isUnlocked ? (media.originalKey.startsWith('data:image') ? media.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`) : undefined,
+          previewUrl: media.previewKey.startsWith('data:') ? media.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
+          originalUrl: isUnlocked ? (media.originalKey.startsWith('data:') ? media.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`) : undefined,
         };
       })
     );
@@ -191,7 +191,7 @@ class MediaService {
       throw AppError.forbidden("You must unlock this media to view it", "NOT_UNLOCKED");
     }
 
-    if (media.originalKey.startsWith('data:image')) {
+    if (media.originalKey.startsWith('data:')) {
       return { originalUrl: media.originalKey };
     }
 

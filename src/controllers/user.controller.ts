@@ -58,8 +58,8 @@ class UserController {
     const processMedia = async (mediaList: any[], isPurchased: boolean) => {
       return Promise.all(
         mediaList.map(async (m) => {
-          const originalUrl = m.originalKey.startsWith('data:image') ? m.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.originalKey)}&v=2`;
-          const previewUrl = m.previewKey.startsWith('data:image') ? m.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.previewKey)}&v=2`;
+          const originalUrl = m.originalKey.startsWith('data:') ? m.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.originalKey)}&v=2`;
+          const previewUrl = m.previewKey.startsWith('data:') ? m.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(m.previewKey)}&v=2`;
           
           const totalCollected = m.purchases ? m.purchases.reduce((acc: number, p: any) => acc + p.amountPaid, 0) : 0;
           const buyers = m.purchases ? m.purchases.map((p: any) => p.user.name || p.user.email.split('@')[0]) : [];
@@ -123,15 +123,16 @@ class UserController {
       transactions.map(async (t) => {
         let title = "Unknown Transaction";
         let description = "";
+        let mediaId: string | null = null;
         
         if (t.reason?.startsWith("unlock:")) {
-          const mediaId = t.reason.split(":")[1];
+          mediaId = t.reason.split(":")[1];
           const media = await prisma.media.findUnique({ where: { id: mediaId }, select: { title: true } });
           title = "Unlocked Image";
           description = media?.title || "Untitled Art";
         } else if (t.reason?.startsWith("sale:")) {
           const parts = t.reason.split(":");
-          const mediaId = parts[1];
+          mediaId = parts[1];
           const buyerId = parts[2];
           
           const media = await prisma.media.findUnique({ where: { id: mediaId }, select: { title: true } });
@@ -155,6 +156,7 @@ class UserController {
           title,
           description,
           createdAt: t.createdAt,
+          mediaId,
         };
       })
     );
