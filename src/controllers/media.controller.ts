@@ -113,9 +113,10 @@ export const proxyImage = asyncHandler(async (req: Request, res: Response) => {
   const realUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
   
   try {
-    const response = await axios.get(realUrl, { responseType: 'stream' });
+    const response = await axios.get(realUrl, { responseType: 'arraybuffer' });
     res.set('Content-Type', response.headers['content-type'] as string || 'image/jpeg');
-    response.data.pipe(res);
+    res.set('Content-Length', response.headers['content-length'] as string || response.data.length.toString());
+    res.send(response.data);
   } catch (err: any) {
     console.error("Proxy error:", err.message);
     // At any cost fallback: if S3 image is missing, proxy the placeholder instead of redirecting
@@ -145,9 +146,10 @@ export const proxyImage = asyncHandler(async (req: Request, res: Response) => {
     const fallbackUrl = NATURE_IMAGES[index];
     
     try {
-      const fallbackResponse = await axios.get(fallbackUrl, { responseType: 'stream' });
+      const fallbackResponse = await axios.get(fallbackUrl, { responseType: 'arraybuffer' });
       res.set('Content-Type', fallbackResponse.headers['content-type'] as string || 'image/jpeg');
-      fallbackResponse.data.pipe(res);
+      res.set('Content-Length', fallbackResponse.headers['content-length'] as string || fallbackResponse.data.length.toString());
+      res.send(fallbackResponse.data);
     } catch (fallbackErr) {
       res.redirect(fallbackUrl);
     }
