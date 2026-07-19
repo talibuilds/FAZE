@@ -11,7 +11,8 @@ model User {
   id            String        @id @default(uuid())
   email         String        @unique
   name          String        @default("User")
-  passwordHash  String
+  passwordHash  String?
+  googleId      String?       @unique
   walletBalance Int           @default(500)
   createdAt     DateTime      @default(now())
   media         Media[]
@@ -22,6 +23,7 @@ model User {
 model Media {
   id          String     @id @default(uuid())
   ownerId     String
+  hash        String?    @unique
   title       String?
   description String?
   tags        String?

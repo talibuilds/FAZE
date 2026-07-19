@@ -35,4 +35,10 @@ router.post(
   authController.login
 );
 
+router.post(
+  "/google",
+  authLimiter,
+  authController.googleLogin
+);
+
 export default router;

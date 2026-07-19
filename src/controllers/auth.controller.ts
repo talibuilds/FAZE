@@ -22,6 +22,22 @@ class AuthController {
       data: result,
     });
   });
+
+  googleLogin = asyncHandler(async (req: Request, res: Response) => {
+    const { email, googleId, name } = req.body;
+    
+    if (!email || !googleId) {
+      res.status(400).json({ error: { message: "Email and Google ID are required" } });
+      return;
+    }
+
+    const result = await authService.googleLogin({ email, googleId, name });
+
+    res.status(200).json({
+      message: "Google login successful",
+      data: result,
+    });
+  });
 }
 
 export const authController = new AuthController();

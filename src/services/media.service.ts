@@ -20,6 +20,15 @@ class MediaService {
   async uploadMedia(input: UploadMediaInput) {
     const { userId, file, price, title, description, tags } = input;
 
+    // Calculate SHA-256 hash of the image buffer
+    const hash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+
+    // Check for duplicate image
+    const existingMedia = await prisma.media.findUnique({ where: { hash } });
+    if (existingMedia) {
+      throw AppError.badRequest("This image has already been published by someone else", "DUPLICATE_IMAGE");
+    }
+
     const previewBufferPromise = sharp(file.buffer)
       .resize(400)
       .jpeg({ quality: 60 })
@@ -33,6 +42,7 @@ class MediaService {
     const media = await prisma.media.create({
       data: {
         ownerId: userId,
+        hash,
         title: title || file.originalname,
         description,
         tags,
