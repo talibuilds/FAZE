@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "FAZE",
+    "slug": "faze-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/logo.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.talibuilds.fazemobile"
+    },
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      "expo-image",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7ba19472-fa0a-4f11-b410-068380192e63"
+      }
+    }
+  }
+}
