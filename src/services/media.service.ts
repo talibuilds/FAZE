@@ -215,6 +215,29 @@ class MediaService {
 
     return isOwner || hasPurchased;
   }
+
+  async deleteMedia(userId: string, mediaId: string) {
+    const media = await prisma.media.findUnique({
+      where: { id: mediaId },
+    });
+
+    if (!media) {
+      throw AppError.notFound("Media not found");
+    }
+
+    if (media.ownerId !== userId) {
+      throw AppError.forbidden("You are not the owner of this media");
+    }
+
+    // Delete related purchases first due to foreign key constraint
+    await prisma.purchase.deleteMany({
+      where: { mediaId },
+    });
+
+    await prisma.media.delete({
+      where: { id: mediaId },
+    });
+  }
 }
 
 export const mediaService = new MediaService();

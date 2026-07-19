@@ -73,12 +73,23 @@ export const purchaseMedia = asyncHandler(async (req: Request, res: Response) =>
 
 export const getOriginalUrl = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const mediaId = req.params.id as string;
+  const id = req.params.id as string;
 
-  const result = await mediaService.getOriginalUrl(userId, mediaId);
+  const originalData = await mediaService.getOriginalUrl(userId, id);
 
   res.status(200).json({
-    data: result,
+    data: originalData,
+  });
+});
+
+export const deleteMedia = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const id = req.params.id as string;
+
+  await mediaService.deleteMedia(userId, id);
+
+  res.status(200).json({
+    message: "Media deleted successfully",
   });
 });
 
