@@ -144,7 +144,7 @@ class MediaService {
           type: "credit",
           amount: media.price,
           balanceAfter: owner.walletBalance + media.price,
-          reason: `sale:${media.id}`,
+          reason: `sale:${media.id}:${userId}`,
         },
       });
 

@@ -110,6 +110,59 @@ class UserController {
       data: updatedUser,
     });
   });
+
+  getTransactionHistory = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    const transactions = await prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const formattedTransactions = await Promise.all(
+      transactions.map(async (t) => {
+        let title = "Unknown Transaction";
+        let description = "";
+        
+        if (t.reason?.startsWith("unlock:")) {
+          const mediaId = t.reason.split(":")[1];
+          const media = await prisma.media.findUnique({ where: { id: mediaId }, select: { title: true } });
+          title = "Unlocked Image";
+          description = media?.title || "Untitled Art";
+        } else if (t.reason?.startsWith("sale:")) {
+          const parts = t.reason.split(":");
+          const mediaId = parts[1];
+          const buyerId = parts[2];
+          
+          const media = await prisma.media.findUnique({ where: { id: mediaId }, select: { title: true } });
+          let buyerName = "Someone";
+          if (buyerId) {
+            const buyer = await prisma.user.findUnique({ where: { id: buyerId }, select: { name: true, email: true } });
+            if (buyer) buyerName = buyer.name || buyer.email.split('@')[0];
+          }
+          
+          title = "Sold Image";
+          description = `${media?.title || "Untitled Art"} to ${buyerName}`;
+        } else if (t.reason === "wallet_deposit") {
+          title = "Wallet Deposit";
+          description = "Added funds to wallet";
+        }
+
+        return {
+          id: t.id,
+          type: t.type,
+          amount: t.amount,
+          title,
+          description,
+          createdAt: t.createdAt,
+        };
+      })
+    );
+
+    res.status(200).json({
+      data: formattedTransactions,
+    });
+  });
 }
 
 export const userController = new UserController();
