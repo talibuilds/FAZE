@@ -21,7 +21,7 @@ async function main() {
     console.error("❌ Failed to initialize S3 Bucket", err);
   }
 
-  app.listen(config.port, () => {
+  app.listen(config.port, "0.0.0.0", () => {
     console.log(`
 ╔══════════════════════════════════════════════╗
 ║                                              ║
