@@ -3,10 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaVie
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient, setAuthToken } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-WebBrowser.maybeCompleteAuthSession();
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+});
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,39 +18,36 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const loginStore = useAuthStore(state => state.login);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: '86930572836-8md9eted7rralugu4j4fdv94ajmh0okd.apps.googleusercontent.com',
-  });
-
-  React.useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      if (authentication?.accessToken) {
-        fetchGoogleUserInfo(authentication.accessToken);
-      }
-    }
-  }, [response]);
-
-  const fetchGoogleUserInfo = async (token: string) => {
+  const promptAsync = async () => {
     setLoading(true);
     try {
-      const res = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const user = await res.json();
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      
+      if (!userInfo || !userInfo.data || !userInfo.data.user) {
+        throw new Error('Google Sign-In returned empty user info');
+      }
+
+      const googleUser = userInfo.data.user;
       
       const result = await apiClient.post('/auth/google', {
-        email: user.email,
-        googleId: user.id,
-        name: user.name,
+        email: googleUser.email,
+        googleId: googleUser.id,
+        name: googleUser.name,
       });
 
       const { token: backendToken, user: backendUser } = result.data.data;
       setAuthToken(backendToken);
       loginStore(backendToken, backendUser);
-    } catch (e: any) {
-      console.error(e);
-      Alert.alert('Google Login Failed', 'Failed to authenticate with backend');
+    } catch (error: any) {
+      console.error(error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Error', 'Google Play Services are not available on this device');
+      } else {
+        Alert.alert('Google Login Failed', error.message || 'An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,13 +77,13 @@ export default function AuthScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* LOGO */}
         <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logoImage} 
-            resizeMode="contain" 
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
             defaultSource={undefined}
           />
           <Text style={styles.logoText}>F A Z E</Text>
@@ -94,14 +92,14 @@ export default function AuthScreen() {
 
         {/* TABS */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, isLogin && styles.activeTab]} 
+          <TouchableOpacity
+            style={[styles.tab, isLogin && styles.activeTab]}
             onPress={() => setIsLogin(true)}
           >
             <Text style={[styles.tabText, isLogin && styles.activeTabText]}>Log in</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, !isLogin && styles.activeTab]} 
+          <TouchableOpacity
+            style={[styles.tab, !isLogin && styles.activeTab]}
             onPress={() => setIsLogin(false)}
           >
             <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>Register</Text>
@@ -115,9 +113,9 @@ export default function AuthScreen() {
               <Text style={styles.label}>Full Name</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={20} color="#888" style={styles.icon} />
-                <TextInput 
-                  style={styles.input} 
-                  placeholder="Jane Doe" 
+                <TextInput
+                  style={styles.input}
+                  placeholder="Jane Doe"
                   placeholderTextColor="#555"
                   value={name}
                   onChangeText={setName}
@@ -129,9 +127,9 @@ export default function AuthScreen() {
           <Text style={styles.label}>Email</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color="#888" style={styles.icon} />
-            <TextInput 
-              style={styles.input} 
-              placeholder="you@example.com" 
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
               placeholderTextColor="#555"
               value={email}
               onChangeText={setEmail}
@@ -143,9 +141,9 @@ export default function AuthScreen() {
           <Text style={styles.label}>Password</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.icon} />
-            <TextInput 
-              style={styles.input} 
-              placeholder="At least 8 characters" 
+            <TextInput
+              style={styles.input}
+              placeholder="At least 8 characters"
               placeholderTextColor="#555"
               value={password}
               onChangeText={setPassword}
@@ -169,8 +167,8 @@ export default function AuthScreen() {
           <View style={styles.oauthRow}>
             <TouchableOpacity 
               style={styles.oauthBtn} 
-              onPress={() => promptAsync()} 
-              disabled={!request || loading}
+              onPress={promptAsync} 
+              disabled={loading}
             >
               <Ionicons name="logo-google" size={24} color="#FFF" />
             </TouchableOpacity>
@@ -191,7 +189,7 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   content: { flex: 1, paddingHorizontal: 25, justifyContent: 'center' },
-  
+
   logoContainer: { alignItems: 'center', marginBottom: 40 },
   logoImage: { width: 80, height: 80 },
   logoText: { color: '#FFF', fontSize: 32, fontWeight: 'bold', letterSpacing: 8, marginTop: 15 },
@@ -210,7 +208,7 @@ const styles = StyleSheet.create({
   iconRight: { marginLeft: 10 },
   input: { flex: 1, color: '#FFF', fontSize: 16, paddingVertical: 15 },
   forgot: { color: '#888', fontSize: 13, alignSelf: 'flex-end', marginBottom: 20 },
-  
+
   mainButton: { backgroundColor: '#FFF', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   mainButtonText: { color: '#000', fontSize: 16, fontWeight: 'bold' },
 

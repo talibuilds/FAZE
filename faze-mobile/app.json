@@ -29,7 +29,7 @@
     "plugins": [
       "expo-sharing",
       "expo-image",
-      "expo-web-browser"
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {
