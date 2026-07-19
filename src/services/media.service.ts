@@ -20,21 +20,14 @@ class MediaService {
   async uploadMedia(input: UploadMediaInput) {
     const { userId, file, price, title, description, tags } = input;
 
-    // Generate unique ID for this media
-    const mediaId = crypto.randomUUID();
-    const originalKey = `media/${mediaId}/original-${file.originalname}`;
-    const previewKey = `media/${mediaId}/preview-${file.originalname}`;
-
-    // Process preview and upload both concurrently for speed
     const previewBufferPromise = sharp(file.buffer)
-      .resize(400) // smaller max width for degradation
-      .jpeg({ quality: 60 }) // lower quality instead of blur
+      .resize(400)
+      .jpeg({ quality: 60 })
       .toBuffer();
 
-    await Promise.all([
-      s3Service.uploadFile(originalKey, file.buffer, file.mimetype),
-      previewBufferPromise.then(previewBuffer => s3Service.uploadFile(previewKey, previewBuffer, file.mimetype))
-    ]);
+    const originalKey = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    const previewBuffer = await previewBufferPromise;
+    const previewKey = `data:${file.mimetype};base64,${previewBuffer.toString('base64')}`;
 
     // Save to database
     const media = await prisma.media.create({
@@ -82,8 +75,8 @@ class MediaService {
           price: media.price,
           ownerEmail: media.owner.email,
           isUnlocked,
-          previewUrl: `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
-          originalUrl: isUnlocked ? `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2` : undefined,
+          previewUrl: media.previewKey.startsWith('data:image') ? media.previewKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.previewKey)}&v=2`,
+          originalUrl: isUnlocked ? (media.originalKey.startsWith('data:image') ? media.originalKey : `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`) : undefined,
         };
       })
     );
@@ -198,9 +191,15 @@ class MediaService {
       throw AppError.forbidden("You must unlock this media to view it", "NOT_UNLOCKED");
     }
 
-    const originalUrl = `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`;
-    return { originalUrl };
+    if (media.originalKey.startsWith('data:image')) {
+      return { originalUrl: media.originalKey };
+    }
+
+    return {
+      originalUrl: `${process.env.API_BASE_URL || 'https://faze-backend.onrender.com'}/api/media/proxy?key=${encodeURIComponent(media.originalKey)}&v=2`,
+    };
   }
+
   async checkAccess(userId: string, mediaId: string): Promise<boolean> {
     const media = await prisma.media.findUnique({
       where: { id: mediaId },
