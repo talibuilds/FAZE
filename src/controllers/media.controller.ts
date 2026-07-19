@@ -116,7 +116,8 @@ export const proxyImage = asyncHandler(async (req: Request, res: Response) => {
     response.data.pipe(res);
   } catch (err: any) {
     console.error("Proxy error:", err.message);
-    // At any cost fallback: if S3 image is missing, redirect to a deterministic placeholder
+    // At any cost fallback: if S3 image is missing, proxy the placeholder instead of redirecting
+    // Redirects cause React Native Image components to forward Authorization headers, which Unsplash rejects.
     const NATURE_IMAGES = [
       'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=80',
       'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&q=80',
@@ -139,6 +140,14 @@ export const proxyImage = asyncHandler(async (req: Request, res: Response) => {
       hash = key.charCodeAt(i) + ((hash << 5) - hash);
     }
     const index = Math.abs(hash) % NATURE_IMAGES.length;
-    res.redirect(NATURE_IMAGES[index]);
+    const fallbackUrl = NATURE_IMAGES[index];
+    
+    try {
+      const fallbackResponse = await axios.get(fallbackUrl, { responseType: 'stream' });
+      res.set('Content-Type', fallbackResponse.headers['content-type'] as string || 'image/jpeg');
+      fallbackResponse.data.pipe(res);
+    } catch (fallbackErr) {
+      res.redirect(fallbackUrl);
+    }
   }
 });

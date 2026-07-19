@@ -31,7 +31,7 @@ The application is officially built in the cloud via **Expo Application Services
   
   <br/>
 
-  [![Download APK](https://img.shields.io/badge/Download_APK-EAS_Build-black?style=for-the-badge&logo=expo)](https://expo.dev/accounts/talibuilds/projects/faze-mobile/builds/6a29461f-5a45-4d01-ad24-8c85acc43593)
+  [![Download APK](https://img.shields.io/badge/Download_APK-EAS_Build-black?style=for-the-badge&logo=expo)](https://expo.dev/accounts/talibuilds/projects/faze-mobile/builds/b78b1dea-81c6-4c0c-a9cb-26ffcea5166b)
 </div>
 
 ---
